@@ -28,6 +28,31 @@ Write-Host "  Phien ban: $Version" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 
+# ── 0. Kiem tra file .env ────────────────────────────────────────────────────
+Write-Host "[0/4] Kiem tra file .env..." -ForegroundColor Yellow
+
+if (-not (Test-Path ".env")) {
+    Write-Host ""
+    Write-Host "  [LOI] Khong tim thay file .env o thu muc goc!" -ForegroundColor Red
+    Write-Host "  Chay lenh sau de tao file .env tu mau:" -ForegroundColor Yellow
+    Write-Host "    Copy-Item .env.example .env" -ForegroundColor White
+    Write-Host "  Sau do chinh sua .env voi mat khau thuc te." -ForegroundColor Yellow
+    Write-Host ""
+    exit 1
+}
+
+if (-not (Test-Path "deploy\.env")) {
+    Write-Host ""
+    Write-Host "  [LOI] Khong tim thay file deploy\.env!" -ForegroundColor Red
+    Write-Host "  Chay lenh sau de tao file tu mau:" -ForegroundColor Yellow
+    Write-Host "    Copy-Item deploy\.env.example deploy\.env" -ForegroundColor White
+    Write-Host "  Sau do chinh sua deploy\.env voi mat khau thuc te." -ForegroundColor Yellow
+    Write-Host ""
+    exit 1
+}
+
+Write-Host "  OK: Ca hai file .env deu ton tai." -ForegroundColor Green
+
 # ── 1. Check Docker ──────────────────────────────────────────────────────────
 Write-Host "[1/4] Kiem tra Docker..." -ForegroundColor Yellow
 docker info >$null 2>&1
