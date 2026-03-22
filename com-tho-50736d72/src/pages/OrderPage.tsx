@@ -65,7 +65,10 @@ export default function OrderPage() {
   const handleClosePrintModal = (open: boolean) => {
     setShowPrintModal(open);
     if (!open) {
-      setPrintPdfBlob(null);
+      // Delay nulling the blob so any in-flight fallback print (setTimeout 150ms
+      // in PrintModal) can still access the Blob object via its captured closure.
+      // The Blob stays in React state briefly but is not displayed anywhere.
+      setTimeout(() => setPrintPdfBlob(null), 500);
     }
   };
 

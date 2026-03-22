@@ -2,7 +2,9 @@
  * Print Service — single source of truth for all print operations.
  *
  * Design principles:
- * - No new tab / popup: printing is done via a hidden off-screen iframe
+ * - Primary path: call print() on the already-loaded preview iframe in PrintModal
+ *   → no extra loading delay, no second iframe, browser dialog appears on clean page
+ * - Fallback path: hidden off-screen iframe (used when preview iframe is unavailable)
  * - Settings are persisted to localStorage so staff don't re-configure each time
  * - Clean blob URL lifecycle: every createObjectURL call is matched with revokeObjectURL
  * - Graceful timeout fallback when iframe.onload doesn't fire (some PDF viewers)
@@ -61,9 +63,11 @@ export interface PrintResult {
 }
 
 /**
- * Print a PDF Blob using a hidden off-screen iframe.
- * This avoids opening any new tab/window — the browser print dialog
- * appears in-context while the app UI stays visible.
+ * Fallback: print a PDF Blob using a hidden off-screen iframe.
+ *
+ * Used only when the primary path (calling print() on the visible preview iframe)
+ * is not available. The caller is responsible for ensuring the custom modal is
+ * already closed before calling this, so the browser dialog appears on a clean page.
  *
  * @param pdfBlob  The PDF blob received from the backend API
  * @param onDone   Optional callback when print dialog has been triggered

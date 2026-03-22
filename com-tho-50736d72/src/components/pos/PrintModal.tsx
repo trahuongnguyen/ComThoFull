@@ -35,6 +35,13 @@ import {
   savePrintSettings,
 } from '@/lib/print-service';
 
+/**
+ * Thứ tự đảm bảo không đứt gãy quy trình in:
+ * 1. Gọi print() trên preview iframe ĐÃ load sẵn (không delay, không tạo iframe mới)
+ * 2. Đóng modal ngay lập tức — browser print dialog xuất hiện trên trang sạch
+ * 3. Nếu preview iframe không available: đóng modal trước, fallback printPdfBlob sau 150ms
+ */
+
 interface PrintModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,8 +56,10 @@ export function PrintModal({
   title = 'In hóa đơn',
 }: PrintModalProps) {
   const { toast } = useToast();
-  const [isPrinting, setIsPrinting] = useState(false);
   const [settings, setSettings] = useState<PrintSettings>(DEFAULT_PRINT_SETTINGS);
+
+  // Ref tới preview iframe — dùng để gọi print() trực tiếp, tránh tạo iframe ẩn mới
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
   // Stable blob URL — created once per pdfBlob instance, revoked on cleanup
   const blobUrlRef = useRef<string | null>(null);
@@ -92,27 +101,37 @@ export function PrintModal({
 
   const handlePrint = () => {
     if (!pdfBlob) return;
-    setIsPrinting(true);
+    if (settings.autoSave) savePrintSettings(settings);
 
-    if (settings.autoSave) {
-      savePrintSettings(settings);
+    // Thử in trực tiếp từ preview iframe đã load sẵn — không delay, không tạo iframe ẩn mới
+    const iframeWindow = previewIframeRef.current?.contentWindow;
+    if (iframeWindow) {
+      try {
+        iframeWindow.focus();
+        iframeWindow.print();
+        // Đóng modal ngay sau khi trigger — browser dialog xuất hiện trên trang sạch
+        onOpenChange(false);
+        return;
+      } catch {
+        // Fallback bên dưới nếu contentWindow không accessible
+      }
     }
 
-    printPdfBlob(pdfBlob, (result) => {
-      setIsPrinting(false);
-      if (result.success) {
-        toast({
-          title: 'Đang in…',
-          description: 'Hộp thoại in đã mở. Chọn máy in và xác nhận để hoàn tất.',
-        });
-      } else {
-        toast({
-          title: 'Lỗi in ấn',
-          description: result.error ?? 'Không thể mở hộp thoại in.',
-          variant: 'destructive',
-        });
-      }
-    });
+    // Fallback: đóng modal trước, sau đó in qua hidden iframe
+    // (giữ blob reference trong closure — Blob object vẫn valid sau khi modal đóng)
+    const blob = pdfBlob;
+    onOpenChange(false);
+    setTimeout(() => {
+      printPdfBlob(blob, (result) => {
+        if (!result.success) {
+          toast({
+            title: 'Lỗi in ấn',
+            description: result.error ?? 'Không thể mở hộp thoại in.',
+            variant: 'destructive',
+          });
+        }
+      });
+    }, 150);
   };
 
   const handleDownload = () => {
@@ -154,6 +173,7 @@ export function PrintModal({
             <div className="flex-1 overflow-hidden">
               {previewUrl ? (
                 <iframe
+                  ref={previewIframeRef}
                   src={previewUrl}
                   className="w-full h-full border-none"
                   title="PDF Preview"
@@ -295,20 +315,11 @@ export function PrintModal({
             <div className="px-4 py-4 border-t border-border space-y-2 shrink-0">
               <Button
                 onClick={handlePrint}
-                disabled={!pdfBlob || isPrinting}
+                disabled={!pdfBlob}
                 className="w-full h-10 gradient-primary text-primary-foreground font-semibold shadow-button hover:opacity-90"
               >
-                {isPrinting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Đang mở hộp thoại in…
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Printer className="w-4 h-4" />
-                    In hóa đơn
-                  </span>
-                )}
+                <Printer className="w-4 h-4" />
+                In hóa đơn
               </Button>
 
               <Button
