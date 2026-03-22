@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 98%;
+    --foreground: 220 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 15%;
+
+    --primary: 32 95% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 20% 20%;
+
+    --muted: 220 15% 90%;
+    --muted-foreground: 220 15% 45%;
+
+    --accent: 220 15% 95%;
+    --accent-foreground: 220 20% 15%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 47%;
+    --warning-foreground: 220 20% 10%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 32 95% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 220 20% 96%;
+    --sidebar-foreground: 220 20% 20%;
+    --sidebar-primary: 32 95% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 92%;
+    --sidebar-accent-foreground: 220 20% 20%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 32 95% 50%;
+
+    /* Custom tokens */
+    --table-empty: 220 15% 85%;
+    --table-ordering: 199 89% 48%;
+    --table-paid: 142 76% 36%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(32 95% 50%), hsl(25 95% 42%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 15% 98%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(220 20% 98%), hsl(220 15% 94%));
+    
+    --shadow-glow: 0 0 30px hsl(32 95% 50% / 0.1);
+    --shadow-card: 0 4px 24px hsl(220 20% 10% / 0.08);
+    --shadow-button: 0 2px 12px hsl(32 95% 50% / 0.25);
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 220 20% 98%;
+
+    --card: 220 20% 13%;
+    --card-foreground: 220 20% 98%;
+
+    --popover: 220 20% 13%;
+    --popover-foreground: 220 20% 98%;
+
+    --primary: 32 95% 55%;
+    --primary-foreground: 220 20% 10%;
+
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 220 20% 98%;
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 15% 60%;
+
+    --accent: 220 20% 22%;
+    --accent-foreground: 220 20% 98%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 47%;
+    --warning-foreground: 220 20% 10%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 32 95% 55%;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 220 20% 98%;
+    --sidebar-primary: 32 95% 55%;
+    --sidebar-primary-foreground: 220 20% 10%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 220 20% 98%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 32 95% 55%;
+
+    /* Custom tokens */
+    --table-empty: 220 15% 25%;
+    --table-ordering: 199 89% 48%;
+    --table-paid: 142 76% 36%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(32 95% 55%), hsl(25 95% 45%));
+    --gradient-card: linear-gradient(180deg, hsl(220 20% 14%), hsl(220 20% 12%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(220 20% 10%), hsl(220 20% 6%));
+    
+    --shadow-glow: 0 0 30px hsl(32 95% 55% / 0.15);
+    --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.3);
+    --shadow-button: 0 2px 12px hsl(32 95% 55% / 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .gradient-sidebar {
+    background: var(--gradient-sidebar);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl;
+  }
+
+  .pos-touch {
+    @apply min-h-[48px] min-w-[48px];
+  }
+}
+
+@layer components {
+  .table-status-empty {
+    @apply bg-muted border-muted-foreground/20;
+  }
+
+  .table-status-ordering {
+    @apply bg-info/20 border-info text-info;
+  }
+
+  .table-status-paid {
+    @apply bg-success/20 border-success text-success;
+  }
+}
