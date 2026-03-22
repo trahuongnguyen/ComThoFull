@@ -2,7 +2,9 @@
 deploy/images.tar
 *.zip
 
-# Environment overrides (keep .env.example committed, never .env with secrets)
+# Environment files — commit only .env.example, never .env with real secrets
+.env
+deploy/.env
 .env.local
 .env.production
 
