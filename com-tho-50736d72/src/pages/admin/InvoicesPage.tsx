@@ -19,10 +19,10 @@ import {
   PaginationEllipsis,
 } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
-import { invoicesApi, shiftsApi } from '@/lib/api';
-import { printPdfBlob } from '@/lib/pdf-utils';
+import { shiftsApi } from '@/lib/api';
+import { ENABLE_USE_MOCK_DATA, fetchPageWithMockFallback, getMockShiftDetail, MOCK_SHIFTS } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
-import { Invoice, Shift, ShiftDetailResponse, Page } from '@/types';
+import { Shift, ShiftDetailResponse } from '@/types';
 
 // // Mock shift
 // const MOCK_SHIFT = Array.from({ length: 20 }, (_, i) => ({
@@ -64,7 +64,7 @@ export default function InvoicesPage() {
   const [searchShiftQuery, setSearchShiftQuery] = useState('');
   // const [expandedInvoice, setExpandedInvoice] = useState<number | null>(null);
   const [expandedShift, setExpandedShift] = useState<number | null>(null);
-  const [shiftDetail, setShiftDetail] = useState<ShiftDetailResponse>(null);
+  const [shiftDetail, setShiftDetail] = useState<ShiftDetailResponse | null>(null);
   // const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,16 +91,20 @@ export default function InvoicesPage() {
       setIsLoading(true);
       try {
         const timeRangeValue = calculateTimeRange();
-        const { data, error } = await shiftsApi.getAll(timeRangeValue, page, size);
-        if (data && !error) {
-          setShifts(data.content);
-          setTotalPages(data.totalPages);
-          setTotalElements(data.totalElements);
-          // Update page and size from response to stay in sync
-          if (data.number !== page) setPage(data.number);
-          if (data.size !== size) setSize(data.size);
+        const { page: pageData, fromMock } = await fetchPageWithMockFallback(
+          () => shiftsApi.getAll(timeRangeValue, page, size),
+          MOCK_SHIFTS,
+          page,
+          size
+        );
+        setShifts(pageData.content);
+        setTotalPages(pageData.totalPages);
+        setTotalElements(pageData.totalElements);
+        if (!fromMock) {
+          if (pageData.number !== page) setPage(pageData.number);
+          if (pageData.size !== size) setSize(pageData.size);
         }
-      } catch (error) {
+      } catch {
         toast({
           title: 'Lỗi tải dữ liệu',
           description: 'Không thể kết nối đến dịch vụ',
@@ -187,22 +191,30 @@ export default function InvoicesPage() {
   const totalShiftRevenue = filterShifts.reduce((sum, sft) => sum + sft.endCash - sft.startCash, 0);
 
   const handleChangeExpandedShift = async (id: number) => {
+    if (expandedShift === id) {
+      setExpandedShift(null);
+      setShiftDetail(null);
+      return;
+    }
     try {
+      if (ENABLE_USE_MOCK_DATA) {
+        setShiftDetail(getMockShiftDetail(id));
+        setExpandedShift(id);
+        return;
+      }
       const { data, error } = await shiftsApi.getById(id);
       if (data && !error) {
-        setExpandedShift(expandedShift === id ? null : id)
         setShiftDetail(data);
+        setExpandedShift(id);
+      } else {
+        setShiftDetail(getMockShiftDetail(id));
+        setExpandedShift(id);
       }
-    } catch (error) {
-      // Fallback to mock data
-      // setInvoices(MOCK_INVOICES as Bill[]);
-      toast({
-        title: 'Lỗi tải dữ liệu',
-        description: 'Không thể kết nối đến dịch vụ ca làm việc',
-        variant: 'destructive',
-      });
+    } catch {
+      setShiftDetail(getMockShiftDetail(id));
+      setExpandedShift(id);
     }
-  }
+  };
 
   return (
     <div className="p-6 overflow-auto h-screen">
@@ -454,7 +466,7 @@ export default function InvoicesPage() {
                           </div>
                         </td>
                       </tr>
-                      {expandedShift === shift.id && (
+                      {expandedShift === shift.id && shiftDetail && (
                         <tr>
                           <td colSpan={12} className="px-6 py-4 bg-muted/20">
                             <div className="space-y-4">
@@ -477,8 +489,8 @@ export default function InvoicesPage() {
                                   ))}
                                 </tbody>
                               </table>
-                              <h4 className="font-semibold text-foreground">Khuyến mãi: {shiftDetail.promotions?.length > 0 ? shiftDetail.promotions.length : 0}</h4>
-                              {shiftDetail.promotions?.length > 0 && (
+                              <h4 className="font-semibold text-foreground">Khuyến mãi: {shiftDetail.promotions?.length ? shiftDetail.promotions.length : 0}</h4>
+                              {!!shiftDetail.promotions?.length && (
                                 <table className="w-full">
                                   <thead>
                                     <tr>
@@ -498,8 +510,8 @@ export default function InvoicesPage() {
                                   </tbody>
                                 </table>
                               )}
-                              <h4 className="font-semibold text-foreground">Hình thức thanh toán: {shiftDetail.payments?.length > 0 ? shiftDetail.payments.length : 0}</h4>
-                              {shiftDetail.payments?.length > 0 && (
+                              <h4 className="font-semibold text-foreground">Hình thức thanh toán: {shiftDetail.payments?.length ? shiftDetail.payments.length : 0}</h4>
+                              {!!shiftDetail.payments?.length && (
                                 <table className="w-full">
                                   <thead>
                                     <tr>

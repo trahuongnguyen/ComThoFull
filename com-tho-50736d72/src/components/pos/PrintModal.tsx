@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Download,
   FileText,
-  Minus,
-  Plus,
+  Info,
   Printer,
   Save,
+  Settings2,
+  Zap,
 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,30 +18,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
   DEFAULT_PRINT_SETTINGS,
-  PAPER_SIZE_LABELS,
-  type PaperSize,
   type PrintSettings,
   downloadPdfBlob,
   loadPrintSettings,
+  openSystemPrinterSetupDialog,
   printPdfBlob,
   savePrintSettings,
 } from '@/lib/print-service';
 
 /**
- * Thứ tự đảm bảo không đứt gãy quy trình in:
- * 1. Gọi print() trên preview iframe ĐÃ load sẵn (không delay, không tạo iframe mới)
- * 2. Đóng modal ngay lập tức — browser print dialog xuất hiện trên trang sạch
- * 3. Nếu preview iframe không available: đóng modal trước, fallback printPdfBlob sau 150ms
+ * Luồng in: xem trước PDF → bấm In → print() trên iframe đã load → đóng modal.
+ * Thiết lập máy in thật: nút riêng → openSystemPrinterSetupDialog (hộp thoại OS/trình duyệt).
  */
 
 interface PrintModalProps {
@@ -57,34 +49,26 @@ export function PrintModal({
 }: PrintModalProps) {
   const { toast } = useToast();
   const [settings, setSettings] = useState<PrintSettings>(DEFAULT_PRINT_SETTINGS);
+  const [printerSetupBusy, setPrinterSetupBusy] = useState(false);
 
-  // Ref tới preview iframe — dùng để gọi print() trực tiếp, tránh tạo iframe ẩn mới
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Stable blob URL — created once per pdfBlob instance, revoked on cleanup
-  const blobUrlRef = useRef<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Load persisted settings when modal opens
   useEffect(() => {
     if (open) {
       setSettings(loadPrintSettings());
     }
   }, [open]);
 
-  // Manage blob URL lifecycle — create only when blob changes, revoke on cleanup
   useEffect(() => {
     if (!pdfBlob) {
       setPreviewUrl(null);
       return;
     }
     const url = URL.createObjectURL(pdfBlob);
-    blobUrlRef.current = url;
     setPreviewUrl(url);
-
     return () => {
       URL.revokeObjectURL(url);
-      blobUrlRef.current = null;
     };
   }, [pdfBlob]);
 
@@ -99,26 +83,42 @@ export function PrintModal({
     });
   };
 
+  const handlePrinterSetup = () => {
+    setPrinterSetupBusy(true);
+    openSystemPrinterSetupDialog((result) => {
+      setPrinterSetupBusy(false);
+      if (result.success) {
+        toast({
+          title: 'Hộp thoại in hệ thống',
+          description:
+            'Chọn máy in nhiệt, khổ giấy và số bản tại đây. Có thể ghi tên máy vào ô bên dưới để nhân viên sau chọn đúng.',
+        });
+      } else {
+        toast({
+          title: 'Không mở được hộp thoại in',
+          description: result.error ?? 'Thử lại hoặc kiểm tra quyền trình duyệt.',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
   const handlePrint = () => {
     if (!pdfBlob) return;
     if (settings.autoSave) savePrintSettings(settings);
 
-    // Thử in trực tiếp từ preview iframe đã load sẵn — không delay, không tạo iframe ẩn mới
     const iframeWindow = previewIframeRef.current?.contentWindow;
     if (iframeWindow) {
       try {
         iframeWindow.focus();
         iframeWindow.print();
-        // Đóng modal ngay sau khi trigger — browser dialog xuất hiện trên trang sạch
         onOpenChange(false);
         return;
       } catch {
-        // Fallback bên dưới nếu contentWindow không accessible
+        /* fallback */
       }
     }
 
-    // Fallback: đóng modal trước, sau đó in qua hidden iframe
-    // (giữ blob reference trong closure — Blob object vẫn valid sau khi modal đóng)
     const blob = pdfBlob;
     onOpenChange(false);
     setTimeout(() => {
@@ -143,17 +143,12 @@ export function PrintModal({
 
   const handleSaveSettings = () => {
     savePrintSettings(settings);
-    toast({ title: 'Đã lưu cài đặt in', description: 'Cài đặt sẽ được dùng cho lần in tiếp theo.' });
-  };
-
-  const adjustCopies = (delta: number) => {
-    updateSetting('copies', Math.max(1, Math.min(10, settings.copies + delta)));
+    toast({ title: 'Đã lưu cài đặt in', description: 'Ghi chú máy in và tùy chọn in nhanh.' });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-full h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
-        {/* Header */}
         <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
           <DialogTitle className="text-lg flex items-center gap-2">
             <Printer className="w-5 h-5 text-primary" />
@@ -161,9 +156,7 @@ export function PrintModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Body — two-panel layout */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* ── Left panel: PDF preview ──────────────────────────── */}
           <div className="flex-1 bg-muted/20 flex flex-col min-w-0 border-r border-border">
             <div className="px-4 py-2 border-b border-border/50 bg-muted/30 shrink-0">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -187,102 +180,90 @@ export function PrintModal({
             </div>
           </div>
 
-          {/* ── Right panel: print configuration ─────────────────── */}
-          <div className="w-64 shrink-0 flex flex-col bg-card overflow-y-auto">
+          <div className="w-[17rem] shrink-0 flex flex-col bg-card overflow-y-auto">
             <div className="px-4 py-2 border-b border-border/50 bg-muted/30 shrink-0">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Cài đặt in
               </span>
             </div>
 
-            <div className="flex-1 flex flex-col gap-5 px-4 py-5">
-              {/* Printer hint */}
+            <div className="flex-1 flex flex-col gap-4 px-4 py-4">
+              <Alert className="py-3 px-3 border-primary/25 bg-primary/5">
+                <Info className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-xs font-semibold">In thật trên web</AlertTitle>
+                <AlertDescription className="text-[11px] text-muted-foreground leading-snug mt-1">
+                  Máy in, khổ giấy và số bản chỉ chọn được trong hộp thoại in của Windows/Chrome —
+                  ứng dụng không can thiệp được. Lần đầu dùng nút bên dưới để chọn đúng máy nhiệt.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full h-10 gap-2 text-sm font-medium"
+                  onClick={handlePrinterSetup}
+                  disabled={printerSetupBusy}
+                >
+                  <Settings2 className="w-4 h-4 shrink-0" />
+                  {printerSetupBusy ? 'Đang mở…' : 'Thiết lập máy in (hệ thống)'}
+                </Button>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Mở hộp thoại in thật với trang thử — chọn máy in POS tại &quot;Đích&quot; / Destination.
+                </p>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="printer-hint" className="text-sm font-medium">
-                  Máy in
+                  Ghi nhớ tên máy in
                 </Label>
                 <Input
                   id="printer-hint"
-                  placeholder="Tên máy in (ghi nhớ)…"
+                  placeholder="Đúng tên trong Windows, VD: EPSON TM-T82"
                   value={settings.printerHint}
                   onChange={(e) => updateSetting('printerHint', e.target.value)}
                   className="h-9 text-sm bg-secondary"
                 />
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  Ghi chú tên máy in để dễ chọn trong hộp thoại in.
+                  Chỉ là ghi chú trên máy này — giúp ca sau chọn đúng dòng trong hộp thoại in.
                 </p>
               </div>
 
-              {/* Paper size */}
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Khổ giấy</Label>
-                <Select
-                  value={settings.paperSize}
-                  onValueChange={(v) => updateSetting('paperSize', v as PaperSize)}
-                >
-                  <SelectTrigger className="h-9 text-sm bg-secondary">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.entries(PAPER_SIZE_LABELS) as [PaperSize, string][]).map(
-                      ([value, label]) => (
-                        <SelectItem key={value} value={value} className="text-sm">
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Copies */}
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Số bản in</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    onClick={() => adjustCopies(-1)}
-                    disabled={settings.copies <= 1}
-                    aria-label="Giảm số bản"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </Button>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={settings.copies}
-                    onChange={(e) =>
-                      updateSetting(
-                        'copies',
-                        Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
-                      )
-                    }
-                    className="h-9 text-center text-sm bg-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-                    aria-label="Số bản in"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    onClick={() => adjustCopies(1)}
-                    disabled={settings.copies >= 10}
-                    aria-label="Tăng số bản"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </Button>
+              <div className="space-y-3 rounded-lg border border-border/80 bg-muted/20 p-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Zap className="w-4 h-4 text-primary shrink-0" />
+                  In nhanh
                 </div>
-                {settings.copies > 1 && (
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-snug">
-                    Xác nhận số bản trong hộp thoại in của trình duyệt.
-                  </p>
-                )}
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Bỏ màn xem trước trong app; vẫn mở hộp thoại in hệ thống để chọn máy.
+                </p>
+                <div className="flex items-start gap-2">
+                  <input
+                    id="quick-kitchen"
+                    type="checkbox"
+                    checked={settings.quickPrintKitchen}
+                    onChange={(e) => updateSetting('quickPrintKitchen', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-primary cursor-pointer shrink-0"
+                  />
+                  <Label htmlFor="quick-kitchen" className="text-sm font-normal leading-snug cursor-pointer">
+                    Sau <strong>Gửi bếp</strong> — in ngay
+                  </Label>
+                </div>
+                <div className="flex items-start gap-2">
+                  <input
+                    id="quick-bill"
+                    type="checkbox"
+                    checked={settings.quickPrintBill}
+                    onChange={(e) => updateSetting('quickPrintBill', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-primary cursor-pointer shrink-0"
+                  />
+                  <Label htmlFor="quick-bill" className="text-sm font-normal leading-snug cursor-pointer">
+                    Sau <strong>Thanh toán</strong> — in ngay
+                  </Label>
+                </div>
               </div>
 
-              {/* Auto-save toggle */}
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-2">
                 <input
                   id="auto-save"
                   type="checkbox"
@@ -307,16 +288,14 @@ export function PrintModal({
                 </Button>
               )}
 
-              {/* Spacer pushes actions to bottom */}
-              <div className="flex-1" />
+              <div className="flex-1 min-h-2" />
             </div>
 
-            {/* Action buttons pinned to bottom */}
             <div className="px-4 py-4 border-t border-border space-y-2 shrink-0">
               <Button
                 onClick={handlePrint}
                 disabled={!pdfBlob}
-                className="w-full h-10 gradient-primary text-primary-foreground font-semibold shadow-button hover:opacity-90"
+                className="w-full h-10 gradient-primary text-primary-foreground font-semibold shadow-button hover:opacity-90 gap-2"
               >
                 <Printer className="w-4 h-4" />
                 In hóa đơn

@@ -11,6 +11,13 @@ import { OrderPanel } from '@/components/pos/OrderPanel';
 import { PaymentModal } from '@/components/pos/PaymentModal';
 import { PrintModal } from '@/components/pos/PrintModal';
 import { ToppingModal } from '@/components/pos/ToppingModal';
+import { useToast } from '@/hooks/use-toast';
+import {
+  hasSessionPrintHintBeenShown,
+  markSessionPrintHintShown,
+  printPdfBlob as openBrowserPrintDialogForPdf,
+  shouldQuickPrint,
+} from '@/lib/print-service';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +45,28 @@ export default function OrderPage() {
   const { currentShift } = useShift();
   const { getActiveOrders } = useOrder();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const notifyPrintDialogOpened = (result: { success: boolean; error?: string }) => {
+    if (!result.success) {
+      toast({
+        title: 'Lỗi in ấn',
+        description: result.error ?? 'Không thể mở hộp thoại in.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!hasSessionPrintHintBeenShown()) {
+      markSessionPrintHintShown();
+      toast({
+        title: 'Hộp thoại in',
+        description:
+          'Chọn máy in và khổ giấy lần đầu. Trình duyệt (Chrome/Edge) thường ghi nhớ máy in cho trang này ở các lần sau — bạn không cần cài lại trong ứng dụng.',
+      });
+    } else {
+      toast({ title: 'Đang mở hộp thoại in…' });
+    }
+  };
 
   // Redirect if no shift
   React.useEffect(() => {
@@ -51,12 +80,20 @@ export default function OrderPage() {
   };
 
   const handlePrintKitchen = (pdfBlob: Blob) => {
+    if (shouldQuickPrint('kitchen')) {
+      openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
+      return;
+    }
     setPrintPdfBlob(pdfBlob);
     setPrintTitle('Hóa đơn bếp');
     setShowPrintModal(true);
   };
 
   const handlePrintBill = (pdfBlob: Blob) => {
+    if (shouldQuickPrint('bill')) {
+      openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
+      return;
+    }
     setPrintPdfBlob(pdfBlob);
     setPrintTitle('Hóa đơn khách hàng');
     setShowPrintModal(true);
