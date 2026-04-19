@@ -11,7 +11,7 @@ import type {
 } from '@/types';
 
 /** Bật true để luôn dùng mock (không gọi API cho danh sách), phục vụ dev/UI nhanh. */
-export const ENABLE_USE_MOCK_DATA = true;
+export const ENABLE_USE_MOCK_DATA = false;
 
 export const MOCK_FLOORS: Floor[] = [
   { id: 1, name: 'Tầng 1' },

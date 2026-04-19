@@ -15,7 +15,7 @@ public class BillController {
     private final BillService billService;
 
     @PostMapping("/{shiftId}/{deskId}/{payment}")
-    public ResponseEntity<byte[]> createBill(
+    public void createBill(
             @PathVariable Long shiftId,
             @PathVariable Long deskId,
             @PathVariable String payment,
@@ -24,11 +24,6 @@ public class BillController {
         Bill bill = billService.createBill(shiftId, deskId, payment, discount);
         byte[] pdfBytes = billService.generatePaymentInvoicePdf(bill.getId());
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=payment-bill.pdf")
-                .body(pdfBytes);
     }
 
 

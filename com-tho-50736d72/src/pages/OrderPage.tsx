@@ -9,14 +9,12 @@ import { TableGrid } from '@/components/pos/TableGrid';
 import { MenuGrid } from '@/components/pos/MenuGrid';
 import { OrderPanel } from '@/components/pos/OrderPanel';
 import { PaymentModal } from '@/components/pos/PaymentModal';
-import { PrintModal } from '@/components/pos/PrintModal';
 import { ToppingModal } from '@/components/pos/ToppingModal';
 import { useToast } from '@/hooks/use-toast';
 import {
   hasSessionPrintHintBeenShown,
   markSessionPrintHintShown,
   printPdfBlob as openBrowserPrintDialogForPdf,
-  shouldQuickPrint,
 } from '@/lib/print-service';
 import {
   AlertDialog,
@@ -31,9 +29,6 @@ import {
 export default function OrderPage() {
   const [activeTab, setActiveTab] = useState<'tables' | 'menu'>('tables');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printPdfBlob, setPrintPdfBlob] = useState<Blob | null>(null);
-  const [printTitle, setPrintTitle] = useState('Invoice');
   const [showCloseShiftWarning, setShowCloseShiftWarning] = useState(false);
   const [toppingModal, setToppingModal] = useState<{
     open: boolean;
@@ -80,33 +75,11 @@ export default function OrderPage() {
   };
 
   const handlePrintKitchen = (pdfBlob: Blob) => {
-    if (shouldQuickPrint('kitchen')) {
-      openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
-      return;
-    }
-    setPrintPdfBlob(pdfBlob);
-    setPrintTitle('Hóa đơn bếp');
-    setShowPrintModal(true);
+    openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
   };
 
   const handlePrintBill = (pdfBlob: Blob) => {
-    if (shouldQuickPrint('bill')) {
-      openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
-      return;
-    }
-    setPrintPdfBlob(pdfBlob);
-    setPrintTitle('Hóa đơn khách hàng');
-    setShowPrintModal(true);
-  };
-
-  const handleClosePrintModal = (open: boolean) => {
-    setShowPrintModal(open);
-    if (!open) {
-      // Delay nulling the blob so any in-flight fallback print (setTimeout 150ms
-      // in PrintModal) can still access the Blob object via its captured closure.
-      // The Blob stays in React state briefly but is not displayed anywhere.
-      setTimeout(() => setPrintPdfBlob(null), 500);
-    }
+    openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
   };
 
   const handleCloseShift = () => {
@@ -187,13 +160,6 @@ export default function OrderPage() {
         open={showPaymentModal}
         onOpenChange={setShowPaymentModal}
         onPrintBill={handlePrintBill}
-      />
-      
-      <PrintModal
-        open={showPrintModal}
-        onOpenChange={handleClosePrintModal}
-        pdfBlob={printPdfBlob}
-        title={printTitle}
       />
       
       <ToppingModal

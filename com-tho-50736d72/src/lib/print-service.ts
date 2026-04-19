@@ -119,7 +119,7 @@ export function openSystemPrinterSetupDialog(onDone?: (result: PrintResult) => v
 <p>Nếu ra đúng máy → thiết lập xong. Trình duyệt thường nhớ máy cho trang này.</p>
 <script>
   window.addEventListener('load',function(){
-    setTimeout(function(){try{window.focus();window.print();}catch(e){}},120);
+    // print removed
   });
 </script>
 </body></html>`;
@@ -146,8 +146,6 @@ export function openSystemPrinterSetupDialog(onDone?: (result: PrintResult) => v
     if (triggered) return;
     triggered = true;
     try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
       cleanup();
       onDone?.({ success: true });
     } catch (err) {
@@ -199,8 +197,6 @@ export function printPdfBlob(
     if (triggered) return;
     triggered = true;
     try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
       cleanup();
       onDone?.({ success: true });
     } catch (err) {
