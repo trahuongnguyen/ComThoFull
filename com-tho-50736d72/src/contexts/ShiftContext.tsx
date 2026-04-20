@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Shift, Invoice, Bill } from '@/types';
 import { AuthContext } from './AuthContext';
 import { shiftsApi } from '@/lib/api';
-import { formatDateTimeVN } from '@/lib/datetime';
 import { clearOrderDraft } from '@/lib/order-draft-storage';
 
 interface ShiftContextType {
@@ -47,13 +46,6 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 
   const openShift = useCallback(async (startCash: number) => {
     if (!user) return;
-
-    const shift: Shift = {
-      userId: user.id,
-      startCash,
-      startTime: new Date(formatDateTimeVN(new Date())),
-      status: 'open',
-    };
 
     const { data, error } = await shiftsApi.open(startCash);
 

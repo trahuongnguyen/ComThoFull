@@ -155,7 +155,8 @@ export interface OrderTempRequest {
   orderDetails: OrderDetailTempRequest[];
   note: string;
   discount: number;
-  startTime: Date;
+  /** `YYYY-MM-DDTHH:mm:ss` theo Asia/Ho_Chi_Minh — khớp Spring `LocalDateTime` */
+  startTime: string;
 }
 
 export interface Invoice {

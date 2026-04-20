@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { shiftsApi } from '@/lib/api';
 import { ENABLE_USE_MOCK_DATA, fetchPageWithMockFallback, getMockShiftDetail, MOCK_SHIFTS } from '@/lib/mock-data';
+import { formatDateTimeVN } from '@/lib/datetime';
 import { useToast } from '@/hooks/use-toast';
 import { Shift, ShiftDetailResponse } from '@/types';
 
@@ -445,10 +446,10 @@ export default function InvoicesPage() {
                         <td className="px-6 py-4 text-sm text-muted-foreground">{formatCurrency(shift.startCash)}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">{formatCurrency(shift.endCash)}</td>
                         <td className="px-6 py-4">
-                          {shift.startTime?.toString()}
+                          {shift.startTime != null ? formatDateTimeVN(shift.startTime as string | Date) : '—'}
                         </td>
                         <td className="px-6 py-4 text-sm text-right font-semibold text-foreground">
-                          {shift.endTime?.toString()}
+                          {shift.endTime != null ? formatDateTimeVN(shift.endTime as string | Date) : '—'}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">
