@@ -182,7 +182,7 @@ public class BillServiceImpl implements BillService {
             doc.add(centerBoldBig("HÓA ĐƠN THANH TOÁN"));
             String deskName = deskRepository.findByIdAndStatus(bill.getOrder().getDesk(), true).map(Desk::getName).orElse("N/A");
             doc.add(text("Bàn: " + deskName));
-            doc.add(text("Giờ: " + formatHour(bill.getOrder().getStartTime()) + " - " + formatHour(LocalDateTime.now())));
+            doc.add(text("Giờ: " + formatHour(bill.getOrder().getStartTime()) + " - " + formatHour(LocalDateTime.now()) + " " + formatDate(LocalDateTime.now())));
             doc.add(createSeparator(new DashedLine(1f)));
 
             Table table = new Table(new float[]{1, 5, 1.5f, 2.5f}).useAllAvailableWidth();
