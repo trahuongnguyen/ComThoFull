@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Order, OrderItem, Table } from '@/types';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { Order, OrderItem } from '@/types';
+import { useShift } from '@/contexts/ShiftContext';
+import { getInitialOrderState, saveOrderDraft } from '@/lib/order-draft-storage';
 
 interface OrderContextType {
   orders: Record<number, Order[]>; // tableId -> array of orders
@@ -27,12 +29,33 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
-  const [orders, setOrders] = useState<Record<number, Order[]>>({});
-  const [activeTableId, setActiveTableId] = useState<number | null>(null);
-  const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
-  const [itemIdCounter, setItemIdCounter] = useState(1);
-  const [orderIdCounter, setOrderIdCounter] = useState(1);
-  const orderIdCounterRef = React.useRef(1);
+  const { currentShift } = useShift();
+  const shiftId = currentShift?.id;
+
+  const initialSnapshot = useMemo(() => getInitialOrderState(shiftId), [shiftId]);
+
+  const [orders, setOrders] = useState<Record<number, Order[]>>(initialSnapshot.orders);
+  const [activeTableId, setActiveTableId] = useState<number | null>(initialSnapshot.activeTableId);
+  const [activeOrderId, setActiveOrderId] = useState<number | null>(initialSnapshot.activeOrderId);
+  const [itemIdCounter, setItemIdCounter] = useState(initialSnapshot.itemIdCounter);
+  const [orderIdCounter, setOrderIdCounter] = useState(initialSnapshot.orderIdCounter);
+  const orderIdCounterRef = React.useRef(initialSnapshot.orderIdCounterRefBase);
+
+  // Lưu draft: reload tab / mất mạng tạm thời — khôi phục theo ca (shiftId)
+  useEffect(() => {
+    if (!shiftId) return;
+    const t = window.setTimeout(() => {
+      saveOrderDraft({
+        shiftId,
+        orders,
+        activeTableId,
+        activeOrderId,
+        itemIdCounter,
+        orderIdCounter,
+      });
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [shiftId, orders, activeTableId, activeOrderId, itemIdCounter, orderIdCounter]);
 
   const calculateOrderTotals = (items: OrderItem[], discountType?: 'percentage' | 'fixed', discountValue?: number) => {
     const subtotal = items.reduce((sum, item) => {

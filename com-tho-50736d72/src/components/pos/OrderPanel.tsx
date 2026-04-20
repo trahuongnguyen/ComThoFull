@@ -9,6 +9,7 @@ import { ordersApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { OrderTempRequest } from '@/types';
 import { formatCurrency } from '@/lib/format';
+import { formatDateTimeVN } from '@/lib/datetime';
 
 interface OrderPanelProps {
   onPayment: () => void;
@@ -93,7 +94,7 @@ export function OrderPanel({ onPayment, onPrintKitchen, onAddTopping }: OrderPan
         orderDetails,
         note: currentOrder.items.map(item => item.note).filter(Boolean).join('; ') || '',
         discount: currentOrder.discountAmount || 0,
-        startTime: new Date(),
+        startTime: new Date(formatDateTimeVN(new Date())),
       };
 
       // Call API to generate and get PDF

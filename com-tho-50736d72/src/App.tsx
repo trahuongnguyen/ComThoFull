@@ -6,6 +6,14 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ShiftProvider } from "@/contexts/ShiftContext";
 import { OrderProvider } from "@/contexts/OrderContext";
+import { useShift } from "@/contexts/ShiftContext";
+
+/** Đổi ca = reset OrderProvider để load draft đúng shiftId từ localStorage */
+function OrderScope({ children }: { children: React.ReactNode }) {
+  const { currentShift } = useShift();
+  const k = currentShift?.id != null ? `shift-${currentShift.id}` : "no-shift";
+  return <OrderProvider key={k}>{children}</OrderProvider>;
+}
 import { RestaurantProvider } from "@/contexts/RestaurantContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
@@ -30,7 +38,7 @@ const App = () => (
       <AuthProvider>
         <RestaurantProvider>
           <ShiftProvider>
-            <OrderProvider>
+            <OrderScope>
               <Toaster />
               <Sonner />
               <HashRouter>
@@ -53,7 +61,7 @@ const App = () => (
                   <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
               </HashRouter>
-            </OrderProvider>
+            </OrderScope>
           </ShiftProvider>
         </RestaurantProvider>
       </AuthProvider>
