@@ -1,6 +1,9 @@
 import { Category, DeskRequest, Floor, FoodItem, FoodRequest, Invoice, Order, OrderTempRequest, Page, Profile, Shift, ShiftDetailResponse, Table, Topping } from "@/types";
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8080';
+// Docker: VITE_API_BASE_URL="" at build time → empty string = relative URLs (/api/...)
+// so the browser talks to the same host:port as the SPA (Nginx), which proxies to backend.
+// MUST use ?? not || — "" is falsy and would wrongly fall back to localhost:8080 (unreachable when backend is not published).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 interface ApiResponse<T> {
   data?: T;
