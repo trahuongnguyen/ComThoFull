@@ -48,7 +48,6 @@ public class BillServiceImpl implements BillService {
     private final BillRepository billRepository;
     private final DeskRepository deskRepository;
     private final ShiftRepository shiftRepository;
-
     private PdfFont currentFont;
 
     @Override
