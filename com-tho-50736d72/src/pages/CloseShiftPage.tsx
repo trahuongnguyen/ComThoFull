@@ -5,6 +5,7 @@ import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrencyVND } from '@/lib/format';
+import { formatDateTimeVN, formatTimeVN } from '@/lib/datetime';
 
 export default function CloseShiftPage() {
   const { currentShift, invoices, closeShift, getShiftSummary } = useShift();
@@ -142,7 +143,7 @@ export default function CloseShiftPage() {
                         {invoice.tableName}
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(invoice.paidAt).toLocaleTimeString()}
+                        {formatTimeVN(invoice.paidAt)}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -178,7 +179,7 @@ export default function CloseShiftPage() {
             </div>
             <div>
               <p className="text-muted-foreground">Giờ bắt đầu</p>
-              <p className="font-semibold text-foreground">{new Date(currentShift.startTime).toLocaleString()}</p>
+              <p className="font-semibold text-foreground">{formatDateTimeVN(currentShift.startTime)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Thời lượng</p>

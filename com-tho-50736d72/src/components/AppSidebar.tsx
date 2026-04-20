@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useShift } from '@/contexts/ShiftContext';
 import { cn } from '@/lib/utils';
+import { formatTimeVN } from '@/lib/datetime';
 
 const userMenuItems = [
   { icon: Clock, label: 'Mở ca', path: '/open-shift' },
@@ -107,7 +108,7 @@ export function AppSidebar() {
           <div className="px-3 py-2 bg-success/10 border border-success/20 rounded-lg">
             <p className="text-xs text-success font-medium">Ca đang hoạt động</p>
             <p className="text-xs text-muted-foreground">
-              Từ {new Date(currentShift.startTime).toLocaleTimeString()}
+              Từ {formatTimeVN(currentShift.startTime)}
             </p>
           </div>
         )}

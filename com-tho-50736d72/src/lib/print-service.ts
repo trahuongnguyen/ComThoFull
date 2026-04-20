@@ -1,3 +1,5 @@
+import { formatDateTimeVN } from '@/lib/datetime';
+
 /**
  * Print Service — single source of truth for all print operations.
  *
@@ -101,6 +103,7 @@ export interface PrintResult {
  * Tại đây người dùng chọn máy in nhiệt, khổ giấy, số bản — đây là bước thiết lập thực tế duy nhất trên web.
  */
 export function openSystemPrinterSetupDialog(onDone?: (result: PrintResult) => void): void {
+  const stamp = formatDateTimeVN(new Date());
   const html = `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"/><title>Thiết lập máy in</title>
 <style>
   body{font-family:system-ui,sans-serif;margin:10px;font-size:11px;line-height:1.35;max-width:72mm}
@@ -115,13 +118,8 @@ export function openSystemPrinterSetupDialog(onDone?: (result: PrintResult) => v
 <h1 class="no-print">Thiết lập máy in POS</h1>
 <p class="no-print hint">Trong hộp thoại in: chọn <b>Đích</b>/<b>Destination</b> = máy in nhiệt. Chỉnh khổ giấy và số bản nếu cần. Hủy nếu chỉ muốn xem.</p>
 <p><b>Trang thử in</b></p>
-<p>${new Date().toLocaleString('vi-VN')}</p>
+<p>${stamp}</p>
 <p>Nếu ra đúng máy → thiết lập xong. Trình duyệt thường nhớ máy cho trang này.</p>
-<script>
-  window.addEventListener('load',function(){
-    // print removed
-  });
-</script>
 </body></html>`;
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -146,6 +144,8 @@ export function openSystemPrinterSetupDialog(onDone?: (result: PrintResult) => v
     if (triggered) return;
     triggered = true;
     try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
       cleanup();
       onDone?.({ success: true });
     } catch (err) {
@@ -197,6 +197,8 @@ export function printPdfBlob(
     if (triggered) return;
     triggered = true;
     try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
       cleanup();
       onDone?.({ success: true });
     } catch (err) {

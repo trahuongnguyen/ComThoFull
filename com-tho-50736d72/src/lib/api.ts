@@ -1,9 +1,29 @@
 import { Category, DeskRequest, Floor, FoodItem, FoodRequest, Invoice, Order, OrderTempRequest, Page, Profile, Shift, ShiftDetailResponse, Table, Topping } from "@/types";
 
-// Docker: VITE_API_BASE_URL="" at build time → empty string = relative URLs (/api/...)
-// so the browser talks to the same host:port as the SPA (Nginx), which proxies to backend.
-// MUST use ?? not || — "" is falsy and would wrongly fall back to localhost:8080 (unreachable when backend is not published).
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+/**
+ * Base URL cho mọi request API.
+ *
+ * - `npm run dev`: mặc định `http://localhost:8080` (backend chạy ngoài Docker trên máy dev).
+ * - `npm run build` / Docker: phải gọi **cùng origin** (`""` → `/api/...`) để Nginx proxy tới `backend:8080`.
+ *   Backend **không** publish cổng 8080 ra host — nếu bundle vẫn trỏ `localhost:8080` thì mọi API (kể cả PDF
+ *   `/api/orderTemp`, `/api/bill/...`) đều lỗi / không in được.
+ *
+ * Lưu ý: `??` chỉ thay khi `null`/`undefined`. Trong build production, Vite đôi khi **không embed**
+ * `VITE_API_BASE_URL` → `undefined` → nếu fallback `localhost:8080` thì Docker vẫn hỏng. Vì vậy dùng
+ * `import.meta.env.DEV`: production + không set URL → luôn dùng chuỗi rỗng (same-origin).
+ */
+function resolveApiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  const trimmed = raw != null ? String(raw).trim() : "";
+
+  if (import.meta.env.DEV) {
+    return trimmed !== "" ? trimmed : "http://localhost:8080";
+  }
+  // production (vite build): chỉ dùng URL tuyệt đối nếu được cấu hình rõ (CDN API, v.v.)
+  return trimmed !== "" ? trimmed : "";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 interface ApiResponse<T> {
   data?: T;

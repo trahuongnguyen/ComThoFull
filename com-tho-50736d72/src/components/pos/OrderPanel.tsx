@@ -293,7 +293,7 @@ export function OrderPanel({ onPayment, onPrintKitchen, onAddTopping }: OrderPan
                           onClick={() => onAddTopping(activeTableId!, activeOrderId!, item.id)}
                         >
                           <StickyNote className="w-4 h-4 mr-1" />
-                          Topping/Note
+                          Ghi chú
                         </Button>
                         <Button
                           variant="outline"

@@ -5,16 +5,13 @@ import { useRestaurant } from '@/contexts/RestaurantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
-import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { OrderItemTopping } from '@/types';
 
 interface ToppingModalProps {
   open: boolean;
@@ -24,21 +21,23 @@ interface ToppingModalProps {
   itemId: number;
 }
 
+/**
+ * Ghi chú / tùy chọn size cho món.
+ *
+ * [TẠM TẮT] Chọn topping từ danh sách — bỏ comment khối "TOPPING (tạm tắt)" bên dưới khi cần bật lại.
+ */
 export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: ToppingModalProps) {
   const { getOrder, updateItemToppings } = useOrder();
-  const { toppings: availableToppings, foodItems } = useRestaurant();
+  const { foodItems } = useRestaurant();
 
   const order = getOrder(tableId, orderId);
   const item = order?.items.find(i => i.id === itemId);
 
-  const [selectedToppings, setSelectedToppings] = useState<OrderItemTopping[]>([]);
   const [note, setNote] = useState('');
   const [isUpsized, setIsUpsized] = useState(false);
 
-  // Initialize state when modal opens
   useEffect(() => {
     if (open && item) {
-      setSelectedToppings(item.toppings || []);
       setNote(item.note || '');
       setIsUpsized(item.isUpsized || false);
     }
@@ -49,18 +48,9 @@ export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: T
   const food = foodItems.find(f => f.id === item.foodId);
   const hasUpsizeOption = food?.canUpSize;
 
-  const handleToppingToggle = (topping: typeof availableToppings[0]) => {
-    setSelectedToppings(prev => {
-      const exists = prev.find(t => t.toppingId === topping.id);
-      if (exists) {
-        return prev.filter(t => t.toppingId !== topping.id);
-      }
-      return [...prev, { toppingId: topping.id, name: topping.name, price: topping.price }];
-    });
-  };
-
   const handleSave = () => {
-    updateItemToppings(tableId, orderId, itemId, selectedToppings, note, isUpsized, food?.upsizePrice);
+    /* Giữ toppings hiện có trên item (không chỉnh từ UI); chỉ cập nhật note + upsize */
+    updateItemToppings(tableId, orderId, itemId, item.toppings || [], note, isUpsized, food?.upsizePrice);
     onOpenChange(false);
   };
 
@@ -72,19 +62,24 @@ export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: T
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Customize {item.foodName}</DialogTitle>
+          <DialogTitle className="text-xl">Ghi chú — {item.foodName}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Toppings */}
+          {/*
+            ─── TOPPING (tạm tắt) — bỏ comment cả khối khi bật lại tính năng topping ───
+            Cần thêm lại: import OrderItemTopping, availableToppings từ useRestaurant,
+            state selectedToppings + handleToppingToggle, và truyền selectedToppings vào updateItemToppings.
+
           <div className="space-y-3">
-            <Label>Add Toppings</Label>
+            <Label>Thêm topping</Label>
             <div className="grid grid-cols-2 gap-2">
               {availableToppings.map((topping) => {
                 const isSelected = selectedToppings.some(t => t.toppingId === topping.id);
                 return (
                   <button
                     key={topping.id}
+                    type="button"
                     onClick={() => handleToppingToggle(topping)}
                     className={cn(
                       'flex items-center justify-between p-3 rounded-lg border-2 transition-all text-left',
@@ -103,12 +98,13 @@ export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: T
               })}
             </div>
           </div>
+          ─── /TOPPING ───
+          */}
 
-          {/* Upsize Option */}
           {hasUpsizeOption && (
             <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border">
               <div>
-                <p className="font-medium text-foreground">Upsize</p>
+                <p className="font-medium text-foreground">Tăng size</p>
                 <p className="text-sm text-muted-foreground">+{formatCurrency(food?.upsizePrice || 0)}</p>
               </div>
               <Switch
@@ -118,33 +114,31 @@ export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: T
             </div>
           )}
 
-          {/* Note */}
           <div className="space-y-2">
-            <Label htmlFor="note">Special Instructions</Label>
+            <Label htmlFor="note">Ghi chú món</Label>
             <Input
               id="note"
-              placeholder="e.g., No onions, extra spicy..."
+              placeholder="VD: Ít đường, không hành…"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="bg-secondary"
             />
           </div>
 
-          {/* Actions */}
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
               <X className="w-4 h-4 mr-2" />
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={handleSave}
               className="gradient-primary text-primary-foreground shadow-button hover:opacity-90"
             >
               <Check className="w-4 h-4 mr-2" />
-              Save
+              Lưu
             </Button>
           </div>
         </div>
