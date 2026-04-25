@@ -39,6 +39,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Health check and root
                         .requestMatchers("/health", "/").permitAll()
+                        // QZ Tray signing/cert (POS local bridge)
+                        .requestMatchers("/api/qz/**").permitAll()
                         // Static resources
                         .requestMatchers(
                                 "/index.html",
