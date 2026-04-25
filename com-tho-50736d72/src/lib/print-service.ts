@@ -1,4 +1,5 @@
 import { formatDateTimeVN } from '@/lib/datetime';
+import qz from 'qz-tray';
 
 /**
  * Print Service — single source of truth for all print operations.
@@ -234,4 +235,218 @@ export function downloadPdfBlob(pdfBlob: Blob, filename: string = 'hoa-don.pdf')
   link.click();
   document.body.removeChild(link);
   setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+}
+
+// -----------------------------
+// QZ Tray bridge (silent print)
+// -----------------------------
+
+/**
+ * QZ Tray là "local bridge" chuẩn POS: Web → WebSocket → QZ Tray → Printer.
+ *
+ * Production notes:
+ * - QZ yêu cầu TLS certificate + signature cho từng request (trừ khi bạn chạy chế độ demo/dev).
+ * - Tuyệt đối KHÔNG nhúng private key ký lệnh in vào frontend (ai mở DevTools là lấy được).
+ * - Best practice: backend expose endpoint ký (signing) có authz theo user/role/shift.
+ */
+
+const QZ_PRINTER_STORAGE_KEY = 'restopos:qz:printer';
+
+export type QzPrinterName = string;
+
+export interface QzStatus {
+  installed: boolean;
+  active: boolean;
+}
+
+export interface QzInitOptions {
+  /**
+   * URL trả về certificate public (PEM). Ví dụ: `/qz/public.pem`
+   * (file static hoặc endpoint backend).
+   */
+  certificateUrl: string;
+  /**
+   * Endpoint backend ký message cho QZ. Ví dụ: `/api/qz/sign`
+   * Body: { payload: string } -> { signature: string }
+   */
+  signUrl: string;
+  /** Optional: header auth (JWT/Bearer...) cho signUrl */
+  getAuthHeaders?: () => Record<string, string>;
+}
+
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getQzStatus(): QzStatus {
+  const installed = typeof window !== 'undefined' && typeof qz.websocket !== 'undefined';
+  const active = installed ? qz.websocket.isActive() === true : false;
+  return { installed, active };
+}
+
+/**
+ * Khởi tạo security layer cho QZ Tray.
+ * - certificate: frontend fetch PEM public cert
+ * - signature: frontend gửi payload lên backend để ký
+ */
+export function initQzSecurity(options: QzInitOptions): void {
+  qz.security.setCertificatePromise(async () => {
+    const res = await fetch(options.certificateUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Không tải được certificate (${res.status})`);
+    return await res.text();
+  });
+
+  qz.security.setSignaturePromise(async (toSign: string) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.getAuthHeaders?.() ?? {}),
+    };
+
+    const res = await fetch(options.signUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ payload: toSign }),
+    });
+    if (!res.ok) throw new Error(`Không ký được request (${res.status})`);
+    const data = (await res.json()) as { signature?: string };
+    if (!data.signature) throw new Error('Backend không trả về signature');
+    return data.signature;
+  });
+}
+
+export async function ensureQzConnected(): Promise<void> {
+  if (qz.websocket.isActive()) return;
+  await qz.websocket.connect();
+}
+
+export async function disconnectQz(): Promise<void> {
+  if (!qz.websocket.isActive()) return;
+  await qz.websocket.disconnect();
+}
+
+export async function listQzPrinters(): Promise<QzPrinterName[]> {
+  await ensureQzConnected();
+  return await qz.printers.find();
+}
+
+export function getDefaultQzPrinter(): QzPrinterName | null {
+  const v = safeLocalStorageGet(QZ_PRINTER_STORAGE_KEY);
+  return v && v.trim().length ? v : null;
+}
+
+export function setDefaultQzPrinter(printerName: QzPrinterName): void {
+  safeLocalStorageSet(QZ_PRINTER_STORAGE_KEY, printerName);
+}
+
+export interface QzPrintPlainTextParams {
+  printer: QzPrinterName;
+  /**
+   * TEXT thuần, phù hợp kitchen ticket đơn giản.
+   * Với tiếng Việt: tùy firmware/codepage của máy in, có thể lỗi dấu.
+   * Nếu cần tiếng Việt ổn định, ưu tiên in dạng ảnh (raster) hoặc font-unicode printer.
+   */
+  text: string;
+  copies?: number;
+}
+
+export async function qzPrintPlainText(params: QzPrintPlainTextParams): Promise<void> {
+  await ensureQzConnected();
+  const config = qz.configs.create(params.printer, {
+    copies: params.copies ?? 1,
+    // safe defaults for POS
+    density: 0,
+    // jobName helps Windows queue debugging
+    jobName: 'RestoPOS',
+  });
+
+  const data = [
+    {
+      type: 'raw',
+      format: 'plain',
+      data: params.text,
+    },
+  ];
+
+  await qz.print(config, data);
+}
+
+export interface QzPrintImageParams {
+  printer: QzPrinterName;
+  /**
+   * Data URL (base64) của ảnh, ví dụ: `data:image/png;base64,...`
+   * Đây là cách thực tế nhất để in tiếng Việt “đúng dấu” trên ESC/POS phổ thông.
+   */
+  dataUrl: string;
+  copies?: number;
+}
+
+export async function qzPrintImage(params: QzPrintImageParams): Promise<void> {
+  await ensureQzConnected();
+  const config = qz.configs.create(params.printer, {
+    copies: params.copies ?? 1,
+    jobName: 'RestoPOS',
+  });
+
+  const data = [
+    {
+      type: 'image',
+      data: params.dataUrl,
+    },
+  ];
+
+  await qz.print(config, data);
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+export interface QzPrintPdfBlobParams {
+  printer: QzPrinterName;
+  pdfBlob: Blob;
+  copies?: number;
+}
+
+/**
+ * In PDF silent qua QZ Tray (không mở popup).
+ * Backend của bạn hiện đã trả PDF cho phiếu bếp/hóa đơn, nên đây là cách "ít đụng backend" nhất.
+ */
+export async function qzPrintPdfBlob(params: QzPrintPdfBlobParams): Promise<void> {
+  await ensureQzConnected();
+  const config = qz.configs.create(params.printer, {
+    copies: params.copies ?? 1,
+    jobName: 'RestoPOS',
+  });
+
+  const buffer = await params.pdfBlob.arrayBuffer();
+  const base64 = arrayBufferToBase64(buffer);
+
+  const data = [
+    {
+      type: 'raw',
+      format: 'pdf',
+      flavor: 'base64',
+      data: base64,
+    },
+  ];
+
+  await qz.print(config, data);
 }

@@ -14,6 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import {
   hasSessionPrintHintBeenShown,
   markSessionPrintHintShown,
+  getDefaultQzPrinter,
+  getQzStatus,
+  qzPrintPdfBlob,
   printPdfBlob as openBrowserPrintDialogForPdf,
 } from '@/lib/print-service';
 import {
@@ -75,10 +78,26 @@ export default function OrderPage() {
   };
 
   const handlePrintKitchen = (pdfBlob: Blob) => {
+    const qzStatus = getQzStatus();
+    const printer = getDefaultQzPrinter();
+    if (qzStatus.installed && printer) {
+      qzPrintPdfBlob({ printer, pdfBlob })
+        .then(() => toast({ title: 'Đã in bếp (silent)', description: printer }))
+        .catch(() => openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened));
+      return;
+    }
     openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
   };
 
   const handlePrintBill = (pdfBlob: Blob) => {
+    const qzStatus = getQzStatus();
+    const printer = getDefaultQzPrinter();
+    if (qzStatus.installed && printer) {
+      qzPrintPdfBlob({ printer, pdfBlob })
+        .then(() => toast({ title: 'Đã in hóa đơn (silent)', description: printer }))
+        .catch(() => openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened));
+      return;
+    }
     openBrowserPrintDialogForPdf(pdfBlob, notifyPrintDialogOpened);
   };
 

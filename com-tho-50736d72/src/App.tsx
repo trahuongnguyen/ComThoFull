@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ShiftProvider } from "@/contexts/ShiftContext";
 import { OrderProvider } from "@/contexts/OrderContext";
 import { useShift } from "@/contexts/ShiftContext";
+import { useEffect } from "react";
+import { initQzSecurity } from "@/lib/print-service";
 
 /** Đổi ca = reset OrderProvider để load draft đúng shiftId từ localStorage */
 function OrderScope({ children }: { children: React.ReactNode }) {
@@ -32,6 +34,17 @@ const RestaurantPage = lazy(() => import("./pages/admin/RestaurantPage"));
 
 const queryClient = new QueryClient();
 
+function QzBootstrap() {
+  useEffect(() => {
+    // Safe to call even if QZ not installed; only sets callbacks.
+    initQzSecurity({
+      certificateUrl: "/api/qz/cert",
+      signUrl: "/api/qz/sign",
+    });
+  }, []);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -39,6 +52,7 @@ const App = () => (
         <RestaurantProvider>
           <ShiftProvider>
             <OrderScope>
+              <QzBootstrap />
               <Toaster />
               <Sonner />
               <HashRouter>
