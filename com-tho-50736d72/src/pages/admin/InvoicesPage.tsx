@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 import { shiftsApi } from '@/lib/api';
-import { ENABLE_USE_MOCK_DATA, fetchPageWithMockFallback, getMockShiftDetail, MOCK_SHIFTS } from '@/lib/mock-data';
 import { formatDateTimeVN } from '@/lib/datetime';
 import { useToast } from '@/hooks/use-toast';
 import { Shift, ShiftDetailResponse } from '@/types';
@@ -92,18 +91,19 @@ export default function InvoicesPage() {
       setIsLoading(true);
       try {
         const timeRangeValue = calculateTimeRange();
-        const { page: pageData, fromMock } = await fetchPageWithMockFallback(
-          () => shiftsApi.getAll(timeRangeValue, page, size),
-          MOCK_SHIFTS,
-          page,
-          size
-        );
-        setShifts(pageData.content);
-        setTotalPages(pageData.totalPages);
-        setTotalElements(pageData.totalElements);
-        if (!fromMock) {
-          if (pageData.number !== page) setPage(pageData.number);
-          if (pageData.size !== size) setSize(pageData.size);
+        const { data, error } = await shiftsApi.getAll(timeRangeValue, page, size);
+        if (data && !error) {
+          setShifts(data.content);
+          setTotalPages(data.totalPages);
+          setTotalElements(data.totalElements);
+          if (data.number !== page) setPage(data.number);
+          if (data.size !== size) setSize(data.size);
+        } else {
+          toast({
+            title: 'Lỗi tải dữ liệu',
+            description: 'Không thể kết nối đến dịch vụ',
+            variant: 'destructive',
+          });
         }
       } catch {
         toast({
@@ -198,22 +198,23 @@ export default function InvoicesPage() {
       return;
     }
     try {
-      if (ENABLE_USE_MOCK_DATA) {
-        setShiftDetail(getMockShiftDetail(id));
-        setExpandedShift(id);
-        return;
-      }
       const { data, error } = await shiftsApi.getById(id);
       if (data && !error) {
         setShiftDetail(data);
         setExpandedShift(id);
       } else {
-        setShiftDetail(getMockShiftDetail(id));
-        setExpandedShift(id);
+        toast({
+          title: 'Lỗi',
+          description: 'Không thể tải chi tiết ca làm việc',
+          variant: 'destructive',
+        });
       }
     } catch {
-      setShiftDetail(getMockShiftDetail(id));
-      setExpandedShift(id);
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể tải chi tiết ca làm việc',
+        variant: 'destructive',
+      });
     }
   };
 

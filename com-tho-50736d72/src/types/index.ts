@@ -88,7 +88,7 @@ export interface FoodRequest {
   price: number;
   categoryId: number;
   canUpSize: boolean;
-  upsizePrice?: number;
+  upSizePrice?: number;
 }
 
 export interface FoodItem {
@@ -97,7 +97,7 @@ export interface FoodItem {
   price: number;
   categoryId: number;
   canUpSize?: boolean;
-  upsizePrice?: number;
+  upSizePrice?: number;
 }
 
 export interface Topping {
@@ -121,7 +121,7 @@ export interface OrderItem {
   toppings: OrderItemTopping[];
   note?: string;
   isUpsized?: boolean;
-  upsizePrice?: number;
+  upSizePrice?: number;
 }
 
 export interface Order {

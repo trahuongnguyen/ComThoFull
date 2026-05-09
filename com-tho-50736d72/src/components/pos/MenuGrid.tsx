@@ -37,7 +37,7 @@ export function MenuGrid() {
       unitPrice: food.price,
       toppings: [],
       isUpsized: false,
-      upsizePrice: food.upsizePrice,
+      upSizePrice: food.upSizePrice,
     });
 
     // Change table status to ORDERING when first item is added
@@ -121,7 +121,7 @@ export function MenuGrid() {
 
             {food.canUpSize && (
               <p className="text-xs text-muted-foreground mt-1">
-                +{food.upsizePrice?.toLocaleString('vi-VN')}đ để tăng size
+                +{food.upSizePrice?.toLocaleString('vi-VN')}đ để tăng size
               </p>
             )}
           </button>

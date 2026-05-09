@@ -11,7 +11,7 @@ interface OrderContextType {
   setActiveOrderId: (orderId: number | null) => void;
   addItemToOrder: (tableId: number, tableName: string, item: Omit<OrderItem, 'id'>) => void;
   updateItemQuantity: (tableId: number, orderId: number, itemId: number, quantity: number) => void;
-  updateItemToppings: (tableId: number, orderId: number, itemId: number, toppings: OrderItem['toppings'], note?: string, isUpsized?: boolean, upsizePrice?: number) => void;
+  updateItemToppings: (tableId: number, orderId: number, itemId: number, toppings: OrderItem['toppings'], note?: string, isUpsized?: boolean, upSizePrice?: number) => void;
   removeItem: (tableId: number, orderId: number, itemId: number) => void;
   getOrder: (tableId: number, orderId: number) => Order | undefined;
   getTableOrders: (tableId: number) => Order[];
@@ -59,7 +59,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
 
   const calculateOrderTotals = (items: OrderItem[], discountType?: 'percentage' | 'fixed', discountValue?: number) => {
     const subtotal = items.reduce((sum, item) => {
-      const itemTotal = (item.unitPrice + (item.isUpsized ? (item.upsizePrice || 0) : 0)) * item.quantity;
+      const itemTotal = (item.unitPrice + (item.isUpsized ? (item.upSizePrice || 0) : 0)) * item.quantity;
       const toppingsTotal = item.toppings.reduce((t, topping) => t + topping.price, 0) * item.quantity;
       return sum + itemTotal + toppingsTotal;
     }, 0);
@@ -199,7 +199,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     toppings: OrderItem['toppings'],
     note?: string,
     isUpsized?: boolean,
-    upsizePrice?: number
+    upSizePrice?: number
   ) => {
     setOrders(prev => {
       const tableOrders = prev[tableId];
@@ -209,7 +209,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       if (!order || order.kitchenPrinted) return prev; // Cannot edit if kitchen printed
 
       const updatedItems = order.items.map(i =>
-        i.id === itemId ? { ...i, toppings, note, isUpsized, upsizePrice } : i
+        i.id === itemId ? { ...i, toppings, note, isUpsized, upSizePrice } : i
       );
 
       const totals = calculateOrderTotals(updatedItems, order.discountType, order.discountValue);

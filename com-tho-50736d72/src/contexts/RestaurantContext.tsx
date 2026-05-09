@@ -1,15 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Table, Category, FoodItem, Topping, Staff, DeskRequest, FoodRequest, Floor } from '@/types';
 import { tablesApi, categoriesApi, foodsApi, toppingsApi, floorsApi, authApi } from '@/lib/api';
-import {
-  fetchListWithMockFallback,
-  MOCK_CATEGORIES,
-  MOCK_FLOORS,
-  MOCK_FOOD_ITEMS,
-  MOCK_STAFF,
-  MOCK_TABLES,
-  MOCK_TOPPINGS,
-} from '@/lib/mock-data';
 import { AuthContext } from './AuthContext';
 
 interface RestaurantContextType {
@@ -72,33 +63,33 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
   // Refresh functions
   const refreshTables = useCallback(async () => {
-    const list = await fetchListWithMockFallback(() => tablesApi.getAll(), MOCK_TABLES);
-    setTables(list);
+    const { data } = await tablesApi.getAll();
+    if (data) setTables(data);
   }, []);
 
   const refreshFloors = useCallback(async () => {
-    const list = await fetchListWithMockFallback(() => floorsApi.getAll(), MOCK_FLOORS);
-    setFloors(list);
+    const { data } = await floorsApi.getAll();
+    if (data) setFloors(data);
   }, []);
 
   const refreshCategories = useCallback(async () => {
-    const list = await fetchListWithMockFallback(() => categoriesApi.getAll(), MOCK_CATEGORIES);
-    setCategories(list);
+    const { data } = await categoriesApi.getAll();
+    if (data) setCategories(data);
   }, []);
 
   const refreshFoodItems = useCallback(async () => {
-    const list = await fetchListWithMockFallback(() => foodsApi.getAll(), MOCK_FOOD_ITEMS);
-    setFoodItems(list);
+    const { data } = await foodsApi.getAll();
+    if (data) setFoodItems(data);
   }, []);
 
   const refreshToppings = useCallback(async () => {
-    const list = await fetchListWithMockFallback(() => toppingsApi.getAll(), MOCK_TOPPINGS);
-    setToppings(list);
+    const { data } = await toppingsApi.getAll();
+    if (data) setToppings(data);
   }, []);
 
   const refreshStaff = useCallback(async () => {
-    const list = await fetchListWithMockFallback(() => authApi.getAll(), MOCK_STAFF);
-    setStaff(list);
+    const { data } = await authApi.getAll();
+    if (data) setStaff(data);
   }, []);
 
   const refreshAll = useCallback(async () => {

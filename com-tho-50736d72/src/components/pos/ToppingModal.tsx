@@ -50,7 +50,7 @@ export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: T
 
   const handleSave = () => {
     /* Giữ toppings hiện có trên item (không chỉnh từ UI); chỉ cập nhật note + upsize */
-    updateItemToppings(tableId, orderId, itemId, item.toppings || [], note, isUpsized, food?.upsizePrice);
+    updateItemToppings(tableId, orderId, itemId, item.toppings || [], note, isUpsized, food?.upSizePrice);
     onOpenChange(false);
   };
 
@@ -105,7 +105,7 @@ export function ToppingModal({ open, onOpenChange, tableId, orderId, itemId }: T
             <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border">
               <div>
                 <p className="font-medium text-foreground">Tăng size</p>
-                <p className="text-sm text-muted-foreground">+{formatCurrency(food?.upsizePrice || 0)}</p>
+                <p className="text-sm text-muted-foreground">+{formatCurrency(food?.upSizePrice || 0)}</p>
               </div>
               <Switch
                 checked={isUpsized}

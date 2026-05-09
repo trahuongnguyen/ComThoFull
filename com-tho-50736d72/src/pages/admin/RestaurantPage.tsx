@@ -63,7 +63,7 @@ export default function RestaurantPage() {
 
   // Food state
   const [foodDialog, setFoodDialog] = useState<{ open: boolean; editing?: FoodItem }>({ open: false });
-  const [foodForm, setFoodForm] = useState({ name: '', price: '', categoryId: 0, hasUpsize: false, upsizePrice: '' });
+  const [foodForm, setFoodForm] = useState({ name: '', price: '', categoryId: 0, hasUpsize: false, upSizePrice: '' });
 
   // Topping state
   const [toppingDialog, setToppingDialog] = useState<{ open: boolean; editing?: Topping }>({ open: false });
@@ -255,7 +255,7 @@ export default function RestaurantPage() {
       price: parseInt(foodForm.price),
       categoryId: foodForm.categoryId,
       canUpSize: foodForm.hasUpsize,
-      upsizePrice: foodForm.upsizePrice ? parseInt(foodForm.upsizePrice) : undefined,
+      upSizePrice: foodForm.upSizePrice ? parseInt(foodForm.upSizePrice) : undefined,
     };
     if (foodDialog.editing) {
       updateFoodItem(foodDialog.editing.id, data);
@@ -265,7 +265,7 @@ export default function RestaurantPage() {
       toast({ title: 'Đã thêm món ăn' });
     }
     setFoodDialog({ open: false });
-    setFoodForm({ name: '', price: '', categoryId: 0, hasUpsize: false, upsizePrice: '' });
+    setFoodForm({ name: '', price: '', categoryId: 0, hasUpsize: false, upSizePrice: '' });
   };
 
   // Topping handlers
@@ -417,7 +417,7 @@ export default function RestaurantPage() {
           {/* Foods Tab */}
           <TabsContent value="foods" className="mt-6">
             <div className="flex justify-end mb-4">
-              <Button onClick={() => { setFoodDialog({ open: true }); setFoodForm({ name: '', price: '', categoryId: categories[0]?.id || 0, hasUpsize: false, upsizePrice: '' }); }} className="gradient-primary text-primary-foreground">
+              <Button onClick={() => { setFoodDialog({ open: true }); setFoodForm({ name: '', price: '', categoryId: categories[0]?.id || 0, hasUpsize: false, upSizePrice: '' }); }} className="gradient-primary text-primary-foreground">
                 <Plus className="w-4 h-4 mr-2" />Add Food
               </Button>
             </div>
@@ -454,11 +454,11 @@ export default function RestaurantPage() {
                                 <td className="px-6 py-4 font-medium text-foreground">{food.name}</td>
                                 <td className="px-6 py-4 text-right text-primary font-semibold">{formatCurrency(food.price)}</td>
                                 <td className="px-6 py-4 text-center">
-                                  {food.canUpSize ? <span className="text-success">+{formatCurrency(food.upsizePrice || 0)}</span> : <span className="text-muted-foreground">-</span>}
+                                  {food.canUpSize ? <span className="text-success">+{formatCurrency(food.upSizePrice || 0)}</span> : <span className="text-muted-foreground">-</span>}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                   <div className="flex justify-end gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => { setFoodDialog({ open: true, editing: food }); setFoodForm({ name: food.name, price: String(food.price), categoryId: food.categoryId, hasUpsize: food.canUpSize || false, upsizePrice: String(food.upsizePrice || '') }); }}>
+                                    <Button variant="outline" size="sm" onClick={() => { setFoodDialog({ open: true, editing: food }); setFoodForm({ name: food.name, price: String(food.price), categoryId: food.categoryId, hasUpsize: food.canUpSize || false, upSizePrice: String(food.upSizePrice || '') }); }}>
                                       <Pencil className="w-4 h-4" />
                                     </Button>
                                     <Button variant="outline" size="sm" className="text-destructive" onClick={() => setDeleteDialog({ type: 'food', item: food })}>
@@ -601,7 +601,7 @@ export default function RestaurantPage() {
               {foodForm.hasUpsize && (
                 <div className="space-y-2">
                   <Label>Upsize Price (VND)</Label>
-                  <Input type="number" value={foodForm.upsizePrice} onChange={(e) => setFoodForm(p => ({ ...p, upsizePrice: e.target.value }))} className="bg-secondary" />
+                  <Input type="number" value={foodForm.upSizePrice} onChange={(e) => setFoodForm(p => ({ ...p, upSizePrice: e.target.value }))} className="bg-secondary" />
                 </div>
               )}
             </div>

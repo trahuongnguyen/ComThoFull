@@ -236,7 +236,7 @@ export function OrderPanel({ onPayment, onPrintKitchen, onAddTopping }: OrderPan
                           )}
                         </h4>
                         <p className="text-sm text-primary font-medium">
-                          {formatCurrency(item.unitPrice + (item.isUpsized ? (item.upsizePrice || 0) : 0))}
+                          {formatCurrency(item.unitPrice + (item.isUpsized ? (item.upSizePrice || 0) : 0))}
                         </p>
                       </div>
                       
